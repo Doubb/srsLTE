@@ -257,7 +257,8 @@ void nas::init(usim_interface_nas* usim_, rrc_interface_nas* rrc_, gw_interface_
 
   if (!usim->get_home_plmn_id(&home_plmn)) {
     nas_log->error("Getting Home PLMN Id from USIM. Defaulting to 001-01\n");
-    home_plmn.from_number(61441, 65281); // This is 001 01
+    //home_plmn.from_number(61441, 65281); // This is 001 01
+    home_plmn.from_number(62544, 65285); // SKT (450 05)
   }
 
   // parse and sanity check EIA list
