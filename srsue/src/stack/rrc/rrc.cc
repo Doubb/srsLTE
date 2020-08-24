@@ -870,9 +870,16 @@ void rrc::send_con_request(srslte::establishment_cause_t cause)
   rrc_conn_request_r8_ies_s* rrc_conn_req =
       &ul_ccch_msg.msg.set_c1().set_rrc_conn_request().crit_exts.set_rrc_conn_request_r8();
 
+  ue_identity_configured = true;
   if (ue_identity_configured) {
     rrc_conn_req->ue_id.set_s_tmsi();
     srslte::to_asn1(&rrc_conn_req->ue_id.s_tmsi(), ue_identity);
+    uint32_t target_mmec = 0x03;
+    uint32_t target_m_tmsi = 0xc88533f5;
+    
+    rrc_conn_req->ue_id.s_tmsi().mmec.from_number(target_mmec);
+    rrc_conn_req->ue_id.s_tmsi().m_tmsi.from_number(target_m_tmsi);
+    rrc_log->console("Set UE's S-TMSI : 0x%x%x\n", (uint32_t)rrc_conn_req->ue_id.s_tmsi().mmec.to_number(), (uint32_t)rrc_conn_req->ue_id.s_tmsi().m_tmsi.to_number());
   } else {
     rrc_conn_req->ue_id.set_random_value();
     // TODO use proper RNG
