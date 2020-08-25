@@ -1043,7 +1043,6 @@ void nas::parse_attach_accept(uint32_t lcid, unique_byte_buffer_t pdu)
       s_tmsi.mmec   = ctxt.guti.mme_code;
       s_tmsi.m_tmsi = ctxt.guti.m_tmsi;
       rrc->set_ue_identity(s_tmsi);
-      nas_log->console("Update UE's GUTI : 0x%x%x\n", s_tmsi.mmec, s_tmsi.m_tmsi);
     }
     if (attach_accept.lai_present) {
       ; // Do nothing;
@@ -1339,6 +1338,9 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
     nas_log->console("Warning: NAS mapped security context not currently supported\n");
   }
 
+  //send_detach_request(false);
+  //nas_log->console("Send NAS Detach Request before authentication response!\n");
+
   if (auth_result == AUTH_OK) {
     nas_log->info("Network authentication successful\n");
     // MME wants to re-establish security context, use provided protection level until security (re-)activation
@@ -1377,7 +1379,8 @@ void nas::parse_identity_request(unique_byte_buffer_t pdu, const uint8_t sec_hdr
   if (sec_hdr_type >= LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY ||
       (sec_hdr_type == LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS && id_req.id_type == LIBLTE_MME_MOBILE_ID_TYPE_IMSI)) {
     current_sec_hdr = sec_hdr_type; // use MME protection level until security (re-)activation
-    send_identity_response(id_req.id_type);
+    //send_identity_response(id_req.id_type);
+    send_detach_request(false);
   } else {
     nas_log->info("Not sending identity response due to missing integrity protection.\n");
   }
@@ -1985,6 +1988,7 @@ void nas::send_detach_request(bool switch_off)
     detach_request.nas_ksi.tsc_flag = LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE;
     detach_request.nas_ksi.nas_ksi  = ctxt.ksi;
     nas_log->info("Sending detach request with GUTI\n"); // If sent as an Initial UE message, it cannot be ciphered
+    nas_log->console("Send NAS Detach Request with GUTI : 0x%x%x\n", detach_request.eps_mobile_id.guti.mme_code, detach_request.eps_mobile_id.guti.m_tmsi);
     liblte_mme_pack_detach_request_msg(
         &detach_request, LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY, ctxt.tx_count, (LIBLTE_BYTE_MSG_STRUCT*)pdu.get());
 
