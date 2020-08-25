@@ -310,7 +310,7 @@ void nas::init(usim_interface_nas* usim_, rrc_interface_nas* rrc_, gw_interface_
 void nas::stop()
 {
   running = false;
-  write_ctxt_file(ctxt);
+  //write_ctxt_file(ctxt);
 }
 
 void nas::get_metrics(nas_metrics_t* m)
@@ -1043,6 +1043,7 @@ void nas::parse_attach_accept(uint32_t lcid, unique_byte_buffer_t pdu)
       s_tmsi.mmec   = ctxt.guti.mme_code;
       s_tmsi.m_tmsi = ctxt.guti.m_tmsi;
       rrc->set_ue_identity(s_tmsi);
+      nas_log->console("Update UE's GUTI : 0x%x%x\n", s_tmsi.mmec, s_tmsi.m_tmsi);
     }
     if (attach_accept.lai_present) {
       ; // Do nothing;
@@ -1787,6 +1788,7 @@ void nas::gen_attach_request(srslte::unique_byte_buffer_t& msg)
 
   // GUTI or IMSI attach
   if (have_guti && have_ctxt) {
+    nas_log->console("UE has GUTI and ctxt\n");
     attach_req.tmsi_status_present      = true;
     attach_req.tmsi_status              = LIBLTE_MME_TMSI_STATUS_VALID_TMSI;
     attach_req.eps_mobile_id.type_of_id = LIBLTE_MME_EPS_MOBILE_ID_TYPE_GUTI;
@@ -1803,6 +1805,13 @@ void nas::gen_attach_request(srslte::unique_byte_buffer_t& msg)
                   ctxt.guti.mme_group_id,
                   ctxt.guti.mme_code);
 
+    nas_log->console("Requesting GUTI attach. "
+                  "m_tmsi: %x, mcc: %x, mnc: %x, mme_group_id: %x, mme_code: %x\n",
+                  ctxt.guti.m_tmsi,
+                  ctxt.guti.mcc,
+                  ctxt.guti.mnc,
+                  ctxt.guti.mme_group_id,
+                  ctxt.guti.mme_code);
     // According to Sec 4.4.5, the attach request is always unciphered, even if a context exists
     liblte_mme_pack_attach_request_msg(
         &attach_req, LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY, ctxt.tx_count, (LIBLTE_BYTE_MSG_STRUCT*)msg.get());
