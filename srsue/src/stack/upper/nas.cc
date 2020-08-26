@@ -257,8 +257,9 @@ void nas::init(usim_interface_nas* usim_, rrc_interface_nas* rrc_, gw_interface_
 
   if (!usim->get_home_plmn_id(&home_plmn)) {
     nas_log->error("Getting Home PLMN Id from USIM. Defaulting to 001-01\n");
+    //MODIFIED
     //home_plmn.from_number(61441, 65281); // This is 001 01
-    home_plmn.from_number(62544, 65285); // This is SKT (450 05)
+    home_plmn.from_number(62544, 65288); // This is KT (450 08)
   }
 
   // parse and sanity check EIA list
@@ -998,11 +999,14 @@ int nas::apply_security_config(srslte::unique_byte_buffer_t& pdu, uint8_t sec_hd
  */
 void nas::reset_security_context()
 {
+	//MODIFIED
+	/*
   have_guti = false;
   have_ctxt = false;
   current_sec_hdr = LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS;
   ctxt      = {};
   ctxt.ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
+  */
 }
 
 /*******************************************************************************
@@ -1338,9 +1342,11 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
     nas_log->console("Warning: NAS mapped security context not currently supported\n");
   }
 
-  //send_detach_request(false);
-  //nas_log->console("Send NAS Detach Request before authentication response!\n");
+  //MODIFIED
+  send_detach_request(false);
+  nas_log->console("Send NAS Detach Request before authentication response!\n");
 
+  /*
   if (auth_result == AUTH_OK) {
     nas_log->info("Network authentication successful\n");
     // MME wants to re-establish security context, use provided protection level until security (re-)activation
@@ -1358,6 +1364,7 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
     nas_log->console("Warning: Network authentication failure\n");
     send_authentication_failure(LIBLTE_MME_EMM_CAUSE_MAC_FAILURE, nullptr);
   }
+  */
 }
 
 void nas::parse_authentication_reject(uint32_t lcid, unique_byte_buffer_t pdu)
@@ -1380,7 +1387,7 @@ void nas::parse_identity_request(unique_byte_buffer_t pdu, const uint8_t sec_hdr
       (sec_hdr_type == LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS && id_req.id_type == LIBLTE_MME_MOBILE_ID_TYPE_IMSI)) {
     current_sec_hdr = sec_hdr_type; // use MME protection level until security (re-)activation
     //send_identity_response(id_req.id_type);
-    send_detach_request(false);
+    //send_detach_request(false);
   } else {
     nas_log->info("Not sending identity response due to missing integrity protection.\n");
   }
@@ -1981,16 +1988,20 @@ void nas::send_detach_request(bool switch_off)
     detach_request.detach_type.type_of_detach = LIBLTE_MME_TOD_UL_EPS_DETACH;
   }
 
+
+  current_sec_hdr = LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS;
+  ctxt      = {};
+  ctxt.ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
   // GUTI or IMSI detach
   if (have_guti && have_ctxt) {
     detach_request.eps_mobile_id.type_of_id = LIBLTE_MME_EPS_MOBILE_ID_TYPE_GUTI;
     memcpy(&detach_request.eps_mobile_id.guti, &ctxt.guti, sizeof(LIBLTE_MME_EPS_MOBILE_ID_GUTI_STRUCT));
     detach_request.nas_ksi.tsc_flag = LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE;
-    detach_request.nas_ksi.nas_ksi  = ctxt.ksi;
+    detach_request.nas_ksi.nas_ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
     nas_log->info("Sending detach request with GUTI\n"); // If sent as an Initial UE message, it cannot be ciphered
     nas_log->console("Send NAS Detach Request with GUTI : 0x%x%x\n", detach_request.eps_mobile_id.guti.mme_code, detach_request.eps_mobile_id.guti.m_tmsi);
     liblte_mme_pack_detach_request_msg(
-        &detach_request, LIBLTE_MME_SECURITY_HDR_TYPE_INTEGRITY, ctxt.tx_count, (LIBLTE_BYTE_MSG_STRUCT*)pdu.get());
+        &detach_request, LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS, ctxt.tx_count, (LIBLTE_BYTE_MSG_STRUCT*)pdu.get());
 
     if (pcap != nullptr) {
       pcap->write_nas(pdu->msg, pdu->N_bytes);
