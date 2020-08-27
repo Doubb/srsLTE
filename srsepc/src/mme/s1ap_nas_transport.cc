@@ -100,6 +100,7 @@ bool s1ap_nas_transport::handle_initial_ue_message(const asn1::s1ap::init_ue_msg
   uint64_t imsi           = 0;
   uint32_t m_tmsi         = 0;
   uint32_t enb_ue_s1ap_id = init_ue.protocol_ies.enb_ue_s1ap_id.value.value;
+  uint8_t GUTI_buffer[10];
   liblte_mme_parse_msg_header((LIBLTE_BYTE_MSG_STRUCT*)nas_msg, &pd, &msg_type);
 
   m_s1ap_log->console("Initial UE message: %s\n", liblte_nas_msg_type_to_string(msg_type));
@@ -128,6 +129,15 @@ bool s1ap_nas_transport::handle_initial_ue_message(const asn1::s1ap::init_ue_msg
           nas::handle_detach_request(m_tmsi, enb_ue_s1ap_id, enb_sri, nas_msg, m_nas_init, m_nas_if, m_s1ap->m_nas_log);
       break;
     case LIBLTE_MME_MSG_TYPE_TRACKING_AREA_UPDATE_REQUEST:
+      for(unsigned int i=11; i<21; i++) {
+	      GUTI_buffer[i-11] = nas_msg->msg[i];
+      }
+
+      m_tmsi = ((uint32_t)GUTI_buffer[6]<<24 & 0xFF000000)+
+	       ((uint32_t)GUTI_buffer[7]<<16 & 0x00FF0000)+
+	       ((uint32_t)GUTI_buffer[8]<<8 & 0x0000FF00)+
+	       ((uint32_t)GUTI_buffer[9]<<0 & 0x000000FF);
+
       m_s1ap_log->console("Received Initial UE message -- Tracking Area Update Request\n");
       m_s1ap_log->info("Received Initial UE message -- Tracking Area Update Request\n");
       err = nas::handle_tracking_area_update_request(

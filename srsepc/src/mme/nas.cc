@@ -803,7 +803,10 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
 
   srslte::byte_buffer_t* nas_tx = pool->allocate();
-  nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
+  // MODIFIED
+  //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
+  nas_log->console("Sending TAU Reject with EMM Message 7\n");
+  nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED); // EMM Message No.7
   s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
   pool->deallocate(nas_tx);
   return true;
