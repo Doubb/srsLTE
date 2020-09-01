@@ -259,7 +259,8 @@ void nas::init(usim_interface_nas* usim_, rrc_interface_nas* rrc_, gw_interface_
     nas_log->error("Getting Home PLMN Id from USIM. Defaulting to 001-01\n");
     //MODIFIED
     //home_plmn.from_number(61441, 65281); // This is 001 01
-    home_plmn.from_number(62544, 65288); // This is KT (450 08)
+    //home_plmn.from_number(62544, 65288); // This is KT (450 08)
+    home_plmn.from_number(62544, 65285); // This is SKT (450 05)
   }
 
   // parse and sanity check EIA list
@@ -1343,10 +1344,9 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
   }
 
   //MODIFIED
-  send_detach_request(false);
-  nas_log->console("Send NAS Detach Request before authentication response!\n");
+  //send_detach_request(false);
+  //nas_log->console("Send NAS Detach Request before authentication response!\n");
 
-  /*
   if (auth_result == AUTH_OK) {
     nas_log->info("Network authentication successful\n");
     // MME wants to re-establish security context, use provided protection level until security (re-)activation
@@ -1364,7 +1364,6 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
     nas_log->console("Warning: Network authentication failure\n");
     send_authentication_failure(LIBLTE_MME_EMM_CAUSE_MAC_FAILURE, nullptr);
   }
-  */
 }
 
 void nas::parse_authentication_reject(uint32_t lcid, unique_byte_buffer_t pdu)

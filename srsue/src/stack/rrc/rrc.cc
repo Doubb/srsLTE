@@ -360,8 +360,8 @@ void rrc::set_ue_identity(srslte::s_tmsi_t s_tmsi)
   ue_identity_configured = true;
   ue_identity            = s_tmsi;
   //MODIFIED
-  ue_identity.mmec = 0x02; // YH
-  ue_identity.m_tmsi = 0xeafa0dda; // YH
+  ue_identity.mmec = 0x02; // JJW
+  ue_identity.m_tmsi = 0xc8845edb; // JJW
   rrc_log->info(
       "Set ue-Identity to 0x%" PRIu64 ":0x%" PRIu64 "\n", (uint64_t)ue_identity.mmec, (uint64_t)ue_identity.m_tmsi);
 }
@@ -878,8 +878,8 @@ void rrc::send_con_request(srslte::establishment_cause_t cause)
     rrc_conn_req->ue_id.set_s_tmsi();
     srslte::to_asn1(&rrc_conn_req->ue_id.s_tmsi(), ue_identity);
     //MODIFIED
-    uint32_t target_mmec = 0x02; //YH
-    uint32_t target_m_tmsi = 0xeafa0dda; //YH
+    uint32_t target_mmec = 0x02; // JJW
+    uint32_t target_m_tmsi = 0xc8845edb; // JJW
     
     rrc_conn_req->ue_id.s_tmsi().mmec.from_number(target_mmec);
     rrc_conn_req->ue_id.s_tmsi().m_tmsi.from_number(target_m_tmsi);
