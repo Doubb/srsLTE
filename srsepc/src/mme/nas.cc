@@ -409,12 +409,28 @@ bool nas::handle_guti_attach_request_unknown_ue(uint32_t                        
   pool->deallocate(nas_tx);
   */
 
+  // MODIFIED
+  // Pack Attach Reject in Downlink NAS Transport msg
+  nas_tx = pool->allocate();
+  nas_ctx->pack_attach_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+
+  // Send reply to eNB
+  s1ap->send_downlink_nas_transport(nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
+  pool->deallocate(nas_tx);
+
+  nas_log->info("Downlink NAS: Sending Attach Reject\n");
+  nas_log->console("Downlink NAS: Sending Attach Reject\n");
+  return true;
+ 
+
+  /*
   nas_ctx->pack_identity_request(nas_tx);
   s1ap->send_downlink_nas_transport(
       nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
   pool->deallocate(nas_tx);
 
   return true;
+  */
 }
 
 bool nas::handle_guti_attach_request_known_ue(nas*                                                  nas_ctx,
@@ -1546,6 +1562,32 @@ bool nas::pack_attach_accept(srslte::byte_buffer_t* nas_buffer)
   // Log attach accept info
   m_nas_log->info("Packed Attach Accept\n");
   return true;
+}
+
+// MODIFIED
+bool nas::pack_attach_reject(srslte::byte_buffer_t* nas_buffer, uint8_t emm_cause)
+{
+  m_nas_log->console("Packing Attach Reject\n");
+
+  LIBLTE_MME_ATTACH_REJECT_MSG_STRUCT attach_rej;
+  attach_rej.emm_cause = emm_cause;
+  attach_rej.t3446_value = 0;
+  attach_rej.t3446_value_present = false;
+
+  if (emm_cause == LIBLTE_MME_EMM_CAUSE_CONGESTION) {
+    // Standard would want T3446 set in this case
+    m_nas_log->error("Tracking Area Update Reject EMM Cause set to \"CONGESTION\", but back-off timer not set.\n");
+  }
+
+  LIBLTE_ERROR_ENUM err = liblte_mme_pack_attach_reject_msg(&attach_rej, (LIBLTE_BYTE_MSG_STRUCT*)nas_buffer);
+
+  if (err != LIBLTE_SUCCESS) {
+    m_nas_log->error("Error packing Attach Reject\n");
+    m_nas_log->console("Error packing Attach Reject\n");
+    return false;
+  }
+  return true;
+
 }
 
 bool nas::pack_identity_request(srslte::byte_buffer_t* nas_buffer)

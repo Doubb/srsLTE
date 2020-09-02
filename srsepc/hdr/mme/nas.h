@@ -248,6 +248,8 @@ public:
   bool pack_service_reject(srslte::byte_buffer_t* nas_buffer, uint8_t emm_cause);
   bool pack_tracking_area_update_reject(srslte::byte_buffer_t* nas_buffer, uint8_t emm_cause);
   bool pack_attach_accept(srslte::byte_buffer_t* nas_buffer);
+  // MODIFIED
+  bool pack_attach_reject(srslte::byte_buffer_t* nas_buffer, uint8_t emm_cause);
 
   /* Security functions */
   bool integrity_check(srslte::byte_buffer_t* pdu);
