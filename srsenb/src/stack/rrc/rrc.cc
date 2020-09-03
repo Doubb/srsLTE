@@ -535,6 +535,8 @@ bool rrc::is_paging_opportunity(uint32_t tti, uint32_t* payload_len)
   }
 
   if (paging_rec->paging_record_list.size() > 0) {
+    // MODIFIED - Send paging message with ETWS indication
+    paging_rec->etws_ind_present = true;
     byte_buf_paging.clear();
     asn1::bit_ref bref(byte_buf_paging.msg, byte_buf_paging.get_tailroom());
     if (pcch_msg.pack(bref) == asn1::SRSASN_ERROR_ENCODE_FAIL) {
@@ -802,6 +804,7 @@ uint32_t rrc::generate_sibs()
   // nof_messages includes SIB2 by default, plus all configured SIBs
   uint32_t           nof_messages = 1 + cfg.sib1.sched_info_list.size();
   sched_info_list_l& sched_info   = cfg.sib1.sched_info_list;
+  rrc_log->console("nof_messages : %d\n", (int)nof_messages);
 
   // Store configs,SIBs in common cell ctxt list
   cell_common_list.reset(new cell_info_common_list{cfg});

