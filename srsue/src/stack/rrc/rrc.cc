@@ -880,7 +880,6 @@ void rrc::send_con_request(srslte::establishment_cause_t cause)
     //MODIFIED
     uint32_t target_mmec = 0x11; // JJW
     uint32_t target_m_tmsi = 0xd0215dee; // JJW
-   
     rrc_conn_req->ue_id.s_tmsi().mmec.from_number(target_mmec);
     rrc_conn_req->ue_id.s_tmsi().m_tmsi.from_number(target_m_tmsi);
     rrc_log->console("Send RRC Con Request : Set UE's S-TMSI : 0x%x%x\n", (uint32_t)rrc_conn_req->ue_id.s_tmsi().mmec.to_number(), (uint32_t)rrc_conn_req->ue_id.s_tmsi().m_tmsi.to_number());
