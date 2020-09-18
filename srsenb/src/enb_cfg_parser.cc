@@ -1084,6 +1084,8 @@ int parse_sib1(std::string filename, sib_type1_s* data)
   // sched_info subsection uses a custom field class
   parser::section sched_info("sched_info");
   sib1.add_subsection(&sched_info);
+  // MODIFIED
+  // data.~~~
   sched_info.add_field(new field_sched_info(data));
 
   // Run parser with single section

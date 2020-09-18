@@ -212,6 +212,10 @@ private:
   void send_authentication_response(const uint8_t* res, const size_t res_len);
   void send_authentication_failure(const uint8_t cause, const uint8_t* auth_fail_param);
   void gen_pdn_connectivity_request(LIBLTE_BYTE_MSG_STRUCT* msg);
+  // MODIFIED
+  void send_tracking_area_update_request();
+  void gen_pdn_disconnect_request(srslte::unique_byte_buffer_t& msg);
+  void send_pdn_disconnect_request();
   void send_security_mode_reject(uint8_t cause);
   void send_attach_request();
   void send_detach_request(bool switch_off);

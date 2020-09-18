@@ -7451,6 +7451,32 @@ liblte_mme_unpack_tracking_area_update_reject_msg(LIBLTE_BYTE_MSG_STRUCT*       
     Document Reference: 24.301 v10.2.0 Section 8.2.29
 *********************************************************************/
 // TODO
+// MODIFIED
+LIBLTE_ERROR_ENUM liblte_mme_pack_tracking_area_update_request_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_REQUEST_MSG_STRUCT* tau_req,
+                                                      LIBLTE_BYTE_MSG_STRUCT*                msg)
+{
+  LIBLTE_ERROR_ENUM err     = LIBLTE_ERROR_INVALID_INPUTS;
+  uint8*            msg_ptr = msg->msg;
+
+  if (tau_req != NULL && msg != NULL) {
+    // Protocol Discriminator and Security Header Type
+    *msg_ptr = (LIBLTE_MME_SECURITY_HDR_TYPE_PLAIN_NAS << 4) | (LIBLTE_MME_PD_EPS_MOBILITY_MANAGEMENT);
+    msg_ptr++;
+
+    // KSI and Sequence Number
+    // liblte_mme_pack_ksi_and_sequence_number_ie(&tau_req->ksi_and_seq_num, &msg_ptr);
+
+    // Short MAC
+    // liblte_mme_pack_short_mac_ie(tau_req->short_mac, &msg_ptr);
+
+    // Fill in the number of bytes used
+    msg->N_bytes = msg_ptr - msg->msg;
+
+    err = LIBLTE_SUCCESS;
+  }
+
+  return (err);
+}
 
 /*********************************************************************
     Message Name: Uplink NAS Transport

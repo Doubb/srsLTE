@@ -3220,6 +3220,13 @@ liblte_mme_unpack_tracking_area_update_reject_msg(LIBLTE_BYTE_MSG_STRUCT*       
 // Structs
 // Functions
 // TODO
+// MODIFIED
+typedef struct {
+} LIBLTE_MME_TRACKING_AREA_UPDATE_REQUEST_MSG_STRUCT;
+
+LIBLTE_ERROR_ENUM
+liblte_mme_pack_tracking_area_update_request_msg(LIBLTE_MME_TRACKING_AREA_UPDATE_REQUEST_MSG_STRUCT* ta_update_req,
+		                                 LIBLTE_BYTE_MSG_STRUCT*                             msg);
 
 /*********************************************************************
     Message Name: Uplink NAS Transport

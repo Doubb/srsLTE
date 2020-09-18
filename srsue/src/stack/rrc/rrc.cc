@@ -360,8 +360,8 @@ void rrc::set_ue_identity(srslte::s_tmsi_t s_tmsi)
   ue_identity_configured = true;
   ue_identity            = s_tmsi;
   //MODIFIED
-  ue_identity.mmec = 0x02; // YH
-  ue_identity.m_tmsi = 0xeafa0dda; // YH
+  ue_identity.mmec = 0x11; // JJW
+  ue_identity.m_tmsi = 0xd0215dee; // JJW
   rrc_log->info(
       "Set ue-Identity to 0x%" PRIu64 ":0x%" PRIu64 "\n", (uint64_t)ue_identity.mmec, (uint64_t)ue_identity.m_tmsi);
 }
@@ -878,12 +878,12 @@ void rrc::send_con_request(srslte::establishment_cause_t cause)
     rrc_conn_req->ue_id.set_s_tmsi();
     srslte::to_asn1(&rrc_conn_req->ue_id.s_tmsi(), ue_identity);
     //MODIFIED
-    uint32_t target_mmec = 0x02; //YH
-    uint32_t target_m_tmsi = 0xeafa0dda; //YH
-    
+    uint32_t target_mmec = 0x11; // JJW
+    uint32_t target_m_tmsi = 0xd0215dee; // JJW
+   
     rrc_conn_req->ue_id.s_tmsi().mmec.from_number(target_mmec);
     rrc_conn_req->ue_id.s_tmsi().m_tmsi.from_number(target_m_tmsi);
-    rrc_log->console("Set UE's S-TMSI : 0x%x%x\n", (uint32_t)rrc_conn_req->ue_id.s_tmsi().mmec.to_number(), (uint32_t)rrc_conn_req->ue_id.s_tmsi().m_tmsi.to_number());
+    rrc_log->console("Send RRC Con Request : Set UE's S-TMSI : 0x%x%x\n", (uint32_t)rrc_conn_req->ue_id.s_tmsi().mmec.to_number(), (uint32_t)rrc_conn_req->ue_id.s_tmsi().m_tmsi.to_number());
   } else {
     rrc_conn_req->ue_id.set_random_value();
     // TODO use proper RNG
@@ -2598,7 +2598,7 @@ void rrc::handle_con_setup(rrc_conn_setup_s* setup)
   state = RRC_STATE_CONNECTED;
   t300.stop();
   t302.stop();
-  rrc_log->console("RRC Connected\n");
+  rrc_log->console("handle con setup : RRC Connected\n");
 
   // Apply the Radio Resource configuration
   apply_rr_config_dedicated(&setup->crit_exts.c1().rrc_conn_setup_r8().rr_cfg_ded);
@@ -2606,6 +2606,7 @@ void rrc::handle_con_setup(rrc_conn_setup_s* setup)
   nas->set_barring(srslte::barring_t::none);
 
   if (dedicated_info_nas.get()) {
+    rrc_log->console("Send RRC Connection Setup Complete\n");
     send_con_setup_complete(std::move(dedicated_info_nas));
   } else {
     rrc_log->error("Pending to transmit a ConnectionSetupComplete but no dedicatedInfoNAS was in queue\n");

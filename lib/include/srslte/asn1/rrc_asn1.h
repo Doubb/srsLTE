@@ -8073,6 +8073,7 @@ struct sib_pos_r15_s {
 
 // SystemInformationBlockType1-v8h0-IEs ::= SEQUENCE
 struct sib_type1_v8h0_ies_s {
+  // MODIFIED
   bool                   multi_band_info_list_present = false;
   bool                   non_crit_ext_present         = false;
   multi_band_info_list_l multi_band_info_list;
@@ -8086,6 +8087,7 @@ struct sib_type1_v8h0_ies_s {
 
 // SystemInformationBlockType1-v920-IEs ::= SEQUENCE
 struct sib_type1_v920_ies_s {
+  //MODIFIED
   bool                  ims_emergency_support_r9_present = false;
   bool                  cell_sel_info_v920_present       = false;
   bool                  non_crit_ext_present             = false;
