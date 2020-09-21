@@ -167,8 +167,8 @@ proc_outcome_t nas::rrc_connect_proc::init(srslte::establishment_cause_t cause_,
   // Provide UE-Identity to RRC if have one
   // MODIFIED
   nas_ptr->have_guti = true;
-  nas_ptr->ctxt.guti.mme_code = 0x11;
-  nas_ptr->ctxt.guti.m_tmsi = 0xd0215dee;
+  nas_ptr->ctxt.guti.mme_code = 0x92;
+  nas_ptr->ctxt.guti.m_tmsi = 0xd44006bf;
   if (nas_ptr->have_guti) {
     srslte::s_tmsi_t s_tmsi;
     s_tmsi.mmec   = nas_ptr->ctxt.guti.mme_code;
@@ -230,8 +230,8 @@ proc_outcome_t nas::rrc_connect_proc::react(nas::rrc_connect_proc::connection_re
     // Wait until attachment. If doing a service request is already attached
     nas_ptr->nas_log->console("RRC Connection React : Connection established + PDN Discon\n");
     // nas_ptr->send_pdn_disconnect_request();
-    // nas_ptr->send_detach_request(false);
-    nas_ptr->send_attach_request();
+    nas_ptr->send_detach_request(false);
+    // nas_ptr->send_attach_request();
     // nas_ptr->send_security_mode_reject(LIBLTE_MME_EMM_CAUSE_ILLEGAL_UE);
     // nas_ptr->send_detach_accept();
     // nas_ptr->send_service_request();
@@ -2055,8 +2055,8 @@ void nas::send_detach_request(bool switch_off)
     memcpy(&detach_request.eps_mobile_id.guti, &ctxt.guti, sizeof(LIBLTE_MME_EPS_MOBILE_ID_GUTI_STRUCT));
     detach_request.nas_ksi.tsc_flag = LIBLTE_MME_TYPE_OF_SECURITY_CONTEXT_FLAG_NATIVE;
     detach_request.nas_ksi.nas_ksi  = LIBLTE_MME_NAS_KEY_SET_IDENTIFIER_NO_KEY_AVAILABLE;
-    detach_request.eps_mobile_id.guti.mme_code = 0x11;
-    detach_request.eps_mobile_id.guti.m_tmsi = 0xd0215dee;
+    detach_request.eps_mobile_id.guti.mme_code = 0x02;
+    detach_request.eps_mobile_id.guti.m_tmsi = 0xc8837bbf;
     detach_request.eps_mobile_id.guti.mcc = 5;
     detach_request.eps_mobile_id.guti.mnc = 450;
     detach_request.eps_mobile_id.guti.mme_group_id = 0x8001;
